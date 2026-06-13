@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CS2 3D O'tishma O'yini</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  </head>
+  <body>
+
+    <!-- CORS WARNING BANNER -->
+    <div id="cors-warning" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(9,10,15,0.98); z-index:99999; justify-content:center; align-items:center; flex-direction:column; padding:2rem; text-align:center; color:white; font-family:sans-serif;">
+      <h2 style="color:#ff5252; margin-bottom:1rem; font-size:2rem;">⚠️ Brauzer Xavfsizlik Bloki (CORS / file://)</h2>
+      <p style="max-width:600px; line-height:1.6; font-size:1.1rem; margin-bottom:1.5rem; color:#ccc;">
+        Siz o'yin fayllarini brauzerda to'g'ridan-to'g'ri (double click qilib) ochgansiz. Brauzer xavfsizlik tizimi (CORS) tufayli JavaScript fayllari yuklanishdan to'xtatildi va tugmalar ishlamaydi.
+      </p>
+      <p style="max-width:600px; line-height:1.6; font-size:1.1rem; margin-bottom:2rem; color:#ff7b00; font-weight:bold;">
+        O'yinni ishga tushirish uchun quyidagi usullardan birini ishlating:
+      </p>
+      <div style="background:rgba(255,255,255,0.05); padding:1.5rem; border-radius:10px; text-align:left; max-width:600px; margin-bottom:2rem; font-family: monospace;">
+        1. Terminalda <code style="color:#00f0ff;">npm run dev</code> buyrug'ini bering va ekranda chiqqan <code style="color:#00f0ff;">http://localhost:5173/</code> havolasini oching.<br><br>
+        2. Loyihani <strong>GitHub Pages</strong>-ga yuklang (u yerda onlayn tarzda ishlaydi).
+      </div>
+      <button onclick="document.getElementById('cors-warning').style.display='none'" style="background:#ff7b00; color:white; border:none; padding:0.8rem 2rem; font-size:1rem; border-radius:5px; cursor:pointer; font-weight:bold;">Tushunarli</button>
+    </div>
+
+    <script>
+      // If window.gameInitialized is not set within 1.2s, it means main.js failed to load (usually CORS block)
+      setTimeout(function() {
+        if (!window.gameInitialized) {
+          document.getElementById('cors-warning').style.display = 'flex';
+        }
+      }, 1200);
+    </script>
+    
+    <!-- LOBBY & REGISTRATION CONTAINER -->
+    <div id="lobby-container">
+      <div class="lobby-panel">
+        
+        <div class="lobby-header">
+          <h1>CS2 3D Multiplayer</h1>
+          <p>Haqiqiy 3D muhit, Buy Menu, 50 dan ortiq qurollar va 10 ta baza!</p>
+        </div>
+
+        <div class="setup-grid">
+          
+          <!-- LEFT PANEL: REGISTRATION & MODE SELECT -->
+          <div class="left-panel">
+            
+            <!-- Player 1 Registration -->
+            <div class="card-section" id="p1-registration">
+              <h3 class="card-title">👤 1-O'yinchi Ro'yxatdan O'tish</h3>
+              <label for="p1-name-input">Ismingiz</label>
+              <input type="text" id="p1-name-input" class="input-field" placeholder="Ismingizni yozing..." value="Shohjahon" />
+              
+              <label>Emoji Tanlang</label>
+              <div class="emoji-selector" id="p1-emoji-selector">
+                <button class="emoji-btn active" data-emoji="🦁">🦁</button>
+                <button class="emoji-btn" data-emoji="🐯">🐯</button>
+                <button class="emoji-btn" data-emoji="🐺">🐺</button>
+                <button class="emoji-btn" data-emoji="🐻">🐻</button>
+                <button class="emoji-btn" data-emoji="🦅">🦅</button>
+                <button class="emoji-btn" data-emoji="🐆">🐆</button>
+                <button class="emoji-btn" data-emoji="🐉">🐉</button>
+                <button class="emoji-btn" data-emoji="🦍">🦍</button>
+                <button class="emoji-btn" data-emoji="🦈">🦈</button>
+                <button class="emoji-btn" data-emoji="🦊">🦊</button>
+              </div>
+
+              <button class="btn-primary" id="p1-register-btn">Ro'yxatdan O'tish</button>
+            </div>
+
+            <!-- Online P2P Multiplayer Room Section -->
+            <div class="card-section" id="online-lobby-section" style="display: none; opacity: 0.5; pointer-events: none;">
+              <h3 class="card-title">🌐 Tarmoqli O'yin (Online Room)</h3>
+              <label>Sizning Xona Kodiningiz</label>
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <input type="text" id="p2p-my-id-input" class="input-field" readonly style="margin-bottom:0; font-family:monospace; font-weight:bold; color:var(--color-accent);" value="Yuklanmoqda..." />
+                <button class="btn-secondary" id="p2p-copy-btn" style="margin-top:0; width:100px; padding:0.5rem;">Nusxa</button>
+              </div>
+
+              <label for="p2p-target-id">Do'stingiz Xona Kodi</label>
+              <input type="text" id="p2p-target-id" class="input-field" placeholder="Ulanish uchun kodni kiriting..." />
+              <button class="btn-primary" id="p2p-connect-btn">Xonaga Ulanish</button>
+              
+              <div id="p2p-status" style="margin-top:0.8rem; font-size:0.85rem; color:var(--color-text-muted); text-align:center;">
+                Kodni do'stingizga yuboring yoki do'stingiz yuborgan kodni kiriting.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT PANEL: LEADERBOARD, BASES & GAME REJIM -->
+          <div class="right-panel">
+            
+            <!-- Game Mode Selection -->
+            <div class="card-section">
+              <h3 class="card-title">🎯 O'yin Rejimi</h3>
+              <div class="mode-selector">
+                <button class="mode-btn active" data-mode="solo">
+                  <div class="icon">👤</div>
+                  <div class="title">Solo vs Bots</div>
+                </button>
+                <button class="mode-btn" data-mode="online">
+                  <div class="icon">🌐</div>
+                  <div class="title">1v1 (Tarmoqli / Online)</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Base / Map selection -->
+            <div class="card-section">
+              <h3 class="card-title">🗺️ Bazani Tanlang (10 ta Baza)</h3>
+              <div class="bases-grid" id="bases-list">
+                <!-- Javascript will inject maps dynamically -->
+              </div>
+            </div>
+
+            <!-- Leaderboard / Registered players list -->
+            <div class="card-section">
+              <h3 class="card-title">🏆 Ro'yxatdan o'tganlar jadvali</h3>
+              <table class="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>O'yinchi</th>
+                    <th>Kills</th>
+                    <th>Deaths</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-tbody">
+                  <!-- Javascript will load records from localStorage -->
+                </tbody>
+              </table>
+              <button class="btn-secondary" id="clear-leaderboard-btn">Jadvalni Tozalash</button>
+            </div>
+
+            <!-- Start Game CTA -->
+            <button class="btn-primary" id="start-game-btn" style="margin-top: 1rem; background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%); box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3); font-size: 1.3rem; height: 60px;" disabled>
+              🎮 O'yinni Boshlash
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAIN GAME SCREEN -->
+    <div id="game-container">
+      
+      <!-- WebGL Render Canvas -->
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- HUD OVERLAYS -->
+      <div class="hud-layout" id="game-hud">
+        
+        <!-- Player 1 HUD -->
+        <div class="player-hud" id="hud-p1">
+          
+          <div class="hud-header">
+            <div class="hud-profile">
+              <span class="emoji" id="p1-hud-emoji">🦁</span>
+              <span class="name" id="p1-hud-name">Player 1</span>
+            </div>
+            <div class="hud-cash" id="p1-hud-cash">$800</div>
+            
+            <!-- Radar Minimap -->
+            <div class="hud-radar">
+              <canvas id="radar-p1" class="radar-canvas"></canvas>
+            </div>
+          </div>
+
+          <div class="crosshair"></div>
+
+          <!-- P1 Blood damage screen flash -->
+          <div class="blood-damage-overlay" id="blood-p1"></div>
+
+          <!-- P1 Flashbang flash screen overlay -->
+          <div class="flashbang-screen-overlay" id="flash-p1"></div>
+
+          <!-- Visual control prompt overlay -->
+          <div class="hud-controls-helper">
+            <h4>Boshqaruv (Player 1)</h4>
+            <ul>
+              <li>Harakat: <span>W, A, S, D</span></li>
+              <li>Nishon/Burilish: <span>Sichqoncha</span></li>
+              <li>Otish: <span>Chap Klik</span></li>
+              <li>Sakrash / O'tirish: <span>Space / Chap Ctrl</span></li>
+              <li>Reload: <span>R</span></li>
+              <li>Grenada: <span>O'ng Klik (G slotda)</span></li>
+              <li>Do'kon (Buy Menu): <span>B</span></li>
+              <li>Slotlar: <span>1 - 5 tugmalari</span></li>
+            </ul>
+          </div>
+
+          <div class="hud-footer">
+            <div class="hud-vitality">
+              <div class="hud-stat-box health">
+                <span class="icon">❤️</span>
+                <div class="value-wrap">
+                  <span class="lbl">Sog'lik</span>
+                  <span class="val" id="p1-hud-health">100</span>
+                </div>
+              </div>
+              <div class="hud-stat-box shield">
+                <span class="icon">🛡️</span>
+                <div class="value-wrap">
+                  <span class="lbl">Zirh</span>
+                  <span class="val" id="p1-hud-shield">0</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hud-weapon-status">
+              <div class="hud-ammo-wrap">
+                <div class="hud-ammo-count" id="p1-hud-ammo">20/<span>120</span></div>
+                <div class="hud-weapon-name" id="p1-hud-weapon">Glock-18</div>
+                <div class="hud-reload-prompt" id="p1-reload-prompt" style="display: none;">O'qni Yangilang! (R)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Buy Menu Player 1 -->
+          <div class="buy-menu-overlay" id="buy-menu-p1">
+            <div class="buy-menu-header">
+              <h2>🛒 Buy Menu (1-O'yinchi)</h2>
+              <div class="buy-menu-cash" id="p1-buy-cash">$800</div>
+            </div>
+            <div class="buy-categories-wrap" id="p1-buy-categories">
+              <!-- Dynamically populated categories -->
+            </div>
+            <div class="buy-menu-close-tip">Yopish uchun yana "B" ni bosing</div>
+          </div>
+
+        </div>
+
+        <!-- Player 2 HUD (Split screen) -->
+        <div class="player-hud" id="hud-p2" style="display: none;">
+          
+          <div class="hud-header">
+            <div class="hud-profile">
+              <span class="emoji" id="p2-hud-emoji">🐯</span>
+              <span class="name" id="p2-hud-name">Player 2</span>
+            </div>
+            <div class="hud-cash" id="p2-hud-cash">$800</div>
+            
+            <div class="hud-radar">
+              <canvas id="radar-p2" class="radar-canvas"></canvas>
+            </div>
+          </div>
+
+          <div class="crosshair"></div>
+
+          <div class="blood-damage-overlay" id="blood-p2"></div>
+          <div class="flashbang-screen-overlay" id="flash-p2"></div>
+
+          <div class="hud-controls-helper">
+            <h4>Boshqaruv (Player 2)</h4>
+            <ul>
+              <li>Harakat: <span>I, J, K, L</span></li>
+              <li>Nishon/Burilish: <span>Arrow Keys</span></li>
+              <li>Otish: <span>O'ng Ctrl</span></li>
+              <li>Sakrash / O'tirish: <span>Slash (/) / O'ng Shift</span></li>
+              <li>Reload: <span>O</span></li>
+              <li>Do'kon (Buy Menu): <span>P</span></li>
+              <li>Slotlar: <span>6 - 0 tugmalari</span></li>
+            </ul>
+          </div>
+
+          <div class="hud-footer">
+            <div class="hud-vitality">
+              <div class="hud-stat-box health">
+                <span class="icon">❤️</span>
+                <div class="value-wrap">
+                  <span class="lbl">Sog'lik</span>
+                  <span class="val" id="p2-hud-health">100</span>
+                </div>
+              </div>
+              <div class="hud-stat-box shield">
+                <span class="icon">🛡️</span>
+                <div class="value-wrap">
+                  <span class="lbl">Zirh</span>
+                  <span class="val" id="p2-hud-shield">0</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hud-weapon-status">
+              <div class="hud-ammo-wrap">
+                <div class="hud-ammo-count" id="p2-hud-ammo">12/<span>24</span></div>
+                <div class="hud-weapon-name" id="p2-hud-weapon">USP-S</div>
+                <div class="hud-reload-prompt" id="p2-reload-prompt" style="display: none;">O'qni Yangilang! (O)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Buy Menu Player 2 -->
+          <div class="buy-menu-overlay" id="buy-menu-p2">
+            <div class="buy-menu-header">
+              <h2>🛒 Buy Menu (2-O'yinchi)</h2>
+              <div class="buy-menu-cash" id="p2-buy-cash">$800</div>
+            </div>
+            <div class="buy-categories-wrap" id="p2-buy-categories">
+              <!-- Dynamically populated categories -->
+            </div>
+            <div class="buy-menu-close-tip">Yopish uchun yana "P" ni bosing</div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Killfeed Overlay Container -->
+      <div class="killfeed-container" id="global-killfeed"></div>
+
+      <!-- Central HUD Round Status Overlay -->
+      <div class="hud-center-top">
+        <span class="hud-round-indicator">RAUND:</span>
+        <span class="hud-round-score" id="global-round-score">0 - 0</span>
+      </div>
+
+      <!-- TAB Scoreboard Overlay -->
+      <div id="scoreboard-overlay">
+        <div class="scoreboard-header">
+          <h3 class="scoreboard-title">📊 Raund Peshqadamlari</h3>
+          <span style="font-size: 0.85rem; color: #8a90a0;">TAB tugmasini qo'yib yuboring</span>
+        </div>
+        <table class="scoreboard-table">
+          <thead>
+            <tr>
+              <th>O'yinchi</th>
+              <th>Kills</th>
+              <th>Deaths</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="scoreboard-tbody">
+            <!-- Dynamically filled with player details -->
+          </tbody>
+        </table>
+      </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
